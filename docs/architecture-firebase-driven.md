@@ -31,7 +31,7 @@ flowchart LR
     end
 
     FBAUTH{{Firebase Auth<br/>Google · Microsoft · Facebook · GitHub}}
-    FS[(Firestore<br/>users/{uid} · telegram_logins)]
+    FS[("Firestore<br/>users/{uid} · telegram_logins")]
     TG{{Telegram Bot API}}
 
     LP --> PR
@@ -84,7 +84,7 @@ sequenceDiagram
         FA-->>U: UserCredential (ID token + refresh token, stored in IndexedDB)
     end
     U->>FS: setDoc(users/{uid}, profile, { merge: true })
-    Note over U: onAuthStateChanged fires app-wide;<br/>getIdToken() auto-refreshes the ~1h ID token silently
+    Note over U: onAuthStateChanged fires app-wide<br/>getIdToken auto-refreshes the ~1h ID token silently
 ```
 
 | Provider | Firebase provider class | Notes |

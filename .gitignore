@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Go build artifacts
+/server
+**/server-driven/backend/server
+**/frontend-driven/api/server
+*.test
+*.out
+
+# Environment / secrets (keep the .example templates)
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Tooling
+.claude/
+prompt.md

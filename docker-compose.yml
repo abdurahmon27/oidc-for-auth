@@ -1,0 +1,90 @@
+# Two independent OIDC auth stacks that expose the SAME ports (API :8080, web
+# :5173). They are mutually exclusive Compose profiles, so you run one at a
+# time:
+#
+#   docker compose --profile server-driven   up   # backend + frontend
+#   docker compose --profile frontend-driven up   # fd-api  + fd-web
+#
+# Each stack ships its own Postgres (own volume + migrations) on host :5432.
+services:
+  # ---------- Server-driven stack ----------
+  postgres-sd:
+    image: postgres:16-alpine
+    profiles: ["server-driven"]
+    environment:
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: authpass
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-sd:/var/lib/postgresql/data
+      - ./server-driven/backend/internal/database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authuser -d authdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./server-driven/backend
+    profiles: ["server-driven"]
+    ports:
+      - "8080:8080"
+    env_file: ./server-driven/.env
+    depends_on:
+      postgres-sd:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://authuser:authpass@postgres-sd:5432/authdb?sslmode=disable
+
+  frontend:
+    build: ./server-driven/frontend
+    profiles: ["server-driven"]
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  # ---------- Frontend-driven stack ----------
+  postgres-fd:
+    image: postgres:16-alpine
+    profiles: ["frontend-driven"]
+    environment:
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: authpass
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-fd:/var/lib/postgresql/data
+      - ./frontend-driven/api/internal/database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authuser -d authdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  fd-api:
+    build: ./frontend-driven/api
+    profiles: ["frontend-driven"]
+    ports:
+      - "8080:8080"
+    env_file: ./frontend-driven/api/.env
+    depends_on:
+      postgres-fd:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://authuser:authpass@postgres-fd:5432/authdb?sslmode=disable
+
+  fd-web:
+    build: ./frontend-driven/web
+    profiles: ["frontend-driven"]
+    ports:
+      - "5173:5173"
+    depends_on:
+      - fd-api
+
+volumes:
+  pgdata-sd:
+  pgdata-fd:

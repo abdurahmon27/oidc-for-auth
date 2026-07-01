@@ -75,7 +75,7 @@ sequenceDiagram
     end
     B->>DB: FindOrCreate user + identity (provider, provider_id)
     B->>DB: store refresh_token (SHA256, family UUID)
-    B-->>U: 200 { access_token, expires_in: 900, user }<br/>Set-Cookie refresh_token (7d, HttpOnly, Strict, /auth/refresh)
+    B-->>U: 200 { access_token, expires_in: 900, user }<br/>Set-Cookie refresh_token (7d, HttpOnly, Strict)
     Note over U: access token kept in-memory only
     U->>B: GET /me (Authorization: Bearer <jwt>)
     B-->>U: user profile
@@ -174,7 +174,7 @@ sequenceDiagram
 | Token | Form | Expiry | Where it lives |
 |-------|------|--------|----------------|
 | **Access** | JWT HS256 (`sub`, `email`, `iat`, `exp`) | 15 min (`expires_in: 900`) | **In-memory JS variable** — sent as `Authorization: Bearer` |
-| **Refresh** | 32-byte random | 7 days | `refresh_token` **httpOnly cookie**, `SameSite=Strict`, `Path=/auth/refresh`; **SHA256-hashed** in DB with a `family` UUID |
+| **Refresh** | 32-byte random | 7 days | `refresh_token` **httpOnly cookie**, `SameSite=Strict`, `Path=/`; **SHA256-hashed** in DB with a `family` UUID |
 
 > No access-token cookie and no CSRF cookie here (server-driven has both). The access token being in-memory means a page reload relies on the silent refresh to re-issue it.
 
@@ -244,7 +244,7 @@ erDiagram
 | Who runs OAuth | Backend redirects | Browser SDKs |
 | Provider token seen by | Backend only | Browser, then sent to backend |
 | App access token | httpOnly cookie | **in-memory** Bearer |
-| Refresh token | httpOnly cookie (Strict, `/auth/refresh`) | same |
+| Refresh token | httpOnly cookie (Strict, `/`) | same |
 | CSRF token | yes (double-submit) | not needed (Bearer, not cookie-auth) |
 | GitHub | code exchange server-side | code exchange server-side (frontend redirects) |
 | Ports | 8080 / 5173 | 8080 / 5173 |

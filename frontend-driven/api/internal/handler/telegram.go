@@ -108,16 +108,7 @@ func (h *TelegramHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Refresh token in cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    rawRefresh,
-		Path:     "/auth/refresh",
-		Domain:   h.cookieCfg.Domain,
-		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
-		HttpOnly: true,
-		Secure:   h.cookieCfg.Secure,
-		SameSite: http.SameSiteStrictMode,
-	})
+	setRefreshCookie(w, h.cookieCfg, rawRefresh)
 
 	// Fetch user info
 	uid := pgtype.UUID{}

@@ -29,7 +29,11 @@ func SetRefreshTokenCookie(w http.ResponseWriter, cfg CookieConfig, token string
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    token,
-		Path:     "/auth/refresh",
+		// Path "/" (not "/auth/refresh") so the cookie reaches both the refresh
+		// and logout endpoints, and survives the frontend's "/api" proxy prefix
+		// (the browser sees /api/auth/refresh). HttpOnly + SameSite=Strict remain
+		// the real protections.
+		Path:     "/",
 		Domain:   cfg.Domain,
 		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
 		HttpOnly: true,
@@ -69,7 +73,7 @@ func ClearAuthCookies(w http.ResponseWriter, cfg CookieConfig) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
-		Path:     "/auth/refresh",
+		Path:     "/",
 		Domain:   cfg.Domain,
 		MaxAge:   -1,
 		HttpOnly: true,

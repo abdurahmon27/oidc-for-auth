@@ -87,7 +87,7 @@ sequenceDiagram
     Note over B: Google/MS: verify id_token (OIDC)<br/>FB: Graph /me · GitHub: /user (+/user/emails)
     B->>DB: FindOrCreateByProvider (identity + user)
     B->>DB: Store refresh_token (SHA256 hash, family UUID)
-    B-->>U: 302 to FRONTEND_URL<br/>Set-Cookie access_token (15m, Lax),<br/>refresh_token (7d, Strict, /auth/refresh),<br/>csrf_token (7d, readable)
+    B-->>U: 302 to FRONTEND_URL<br/>Set-Cookie access_token (15m, Lax),<br/>refresh_token (7d, Strict),<br/>csrf_token (7d, readable)
     U->>B: GET /me (access_token cookie)
     B-->>U: user profile + linked providers
 ```
@@ -174,7 +174,7 @@ The frontend (`useAuth.ts`) retries `/auth/refresh` once on an auth failure, the
 | Cookie | HttpOnly | SameSite | Path | Secure |
 |--------|----------|----------|------|--------|
 | `access_token` | ✅ | Lax | `/` | config |
-| `refresh_token` | ✅ | **Strict** | **`/auth/refresh`** | config |
+| `refresh_token` | ✅ | **Strict** | `/` | config |
 | `csrf_token` | ❌ (JS reads it) | Lax | `/` | config |
 | `oauth_state` / `oauth_verifier` | ✅ | Lax | `/` | config |
 
@@ -242,4 +242,4 @@ FACEBOOK_CLIENT_ID/SECRET · GITHUB_CLIENT_ID/SECRET · TELEGRAM_API_TOKEN
 
 ## 9. Security Summary
 
-PKCE S256 on all providers · JWT-signed 5-min state · refresh rotation with **family-based reuse detection** (cascade revoke) · httpOnly access+refresh cookies · SameSite=Strict + path-scoped refresh cookie · CSRF double-submit for mutations · rate limits (10 req/s IP; 3 Telegram sends / phone / 10 min) · short expiries · OIDC signature verification for Google/MS.
+PKCE S256 on all providers · JWT-signed 5-min state · refresh rotation with **family-based reuse detection** (cascade revoke) · httpOnly access+refresh cookies · SameSite=Strict refresh cookie · CSRF double-submit for mutations · rate limits (10 req/s IP; 3 Telegram sends / phone / 10 min) · short expiries · OIDC signature verification for Google/MS.

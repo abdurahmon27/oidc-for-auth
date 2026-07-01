@@ -90,16 +90,7 @@ func (h *SessionHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set new refresh cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    rawRefresh,
-		Path:     "/auth/refresh",
-		Domain:   h.cookieCfg.Domain,
-		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
-		HttpOnly: true,
-		Secure:   h.cookieCfg.Secure,
-		SameSite: http.SameSiteStrictMode,
-	})
+	setRefreshCookie(w, h.cookieCfg, rawRefresh)
 
 	// Fetch identities for response
 	uid := user.ID
@@ -145,11 +136,29 @@ func (h *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "logged out"})
 }
 
+// setRefreshCookie writes the rotated refresh token. Path is "/" (not
+// "/auth/refresh") so the cookie reaches both the refresh and logout endpoints
+// and survives the web app's "/api" proxy prefix — the browser requests
+// /api/auth/refresh, which would never match a "/auth/refresh" cookie path.
+// HttpOnly + SameSite=Strict remain the actual protections.
+func setRefreshCookie(w http.ResponseWriter, cfg CookieConfig, rawRefresh string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    rawRefresh,
+		Path:     "/",
+		Domain:   cfg.Domain,
+		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
+		HttpOnly: true,
+		Secure:   cfg.Secure,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
 func clearRefreshCookie(w http.ResponseWriter, cfg CookieConfig) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
-		Path:     "/auth/refresh",
+		Path:     "/",
 		Domain:   cfg.Domain,
 		MaxAge:   -1,
 		HttpOnly: true,

@@ -1,11 +1,19 @@
-# Two independent OIDC auth stacks that expose the SAME ports (API :8080, web
-# :5173). They are mutually exclusive Compose profiles, so you run one at a
-# time:
+# Three independent auth stacks. server-driven and frontend-driven expose the
+# SAME ports (API :8080, web :5173); firebase-driven only needs web :5173,
+# since Firebase itself is the backend. They are mutually exclusive Compose
+# profiles, so you run one at a time:
 #
 #   docker compose --profile server-driven   up   # backend + frontend
 #   docker compose --profile frontend-driven up   # fd-api  + fd-web
+#   docker compose --profile firebase-driven up   # fb-web only
 #
-# Each stack ships its own Postgres (own volume + migrations) on host :5432.
+# Each Go stack ships its own Postgres (own volume + migrations) on host
+# :5432. firebase-driven has no Postgres and no local API container — it
+# talks to a real Firebase project. Its Cloud Functions (firebase-driven/
+# functions/) are NOT run via Compose; deploy them separately with the
+# Firebase CLI:
+#
+#   firebase deploy --only functions,firestore:rules,hosting
 services:
   # ---------- Server-driven stack ----------
   postgres-sd:
@@ -84,6 +92,16 @@ services:
       - "5173:5173"
     depends_on:
       - fd-api
+
+  # ---------- Firebase-driven stack ----------
+  # Firebase is the backend: no Postgres, no local API container. Cloud
+  # Functions (firebase-driven/functions/) deploy via the Firebase CLI, not
+  # Compose.
+  fb-web:
+    build: ./firebase-driven/web
+    profiles: ["firebase-driven"]
+    ports:
+      - "5173:5173"
 
 volumes:
   pgdata-sd:
